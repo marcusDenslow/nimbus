@@ -5,14 +5,14 @@ import UniformTypeIdentifiers
 
 enum InputEvent {
     case left, right, up, down
-    case confirm      // A / Return
-    case back         // B / Esc
-    case remove       // X / Delete
-    case toggleSearch // Menu / Cmd-F / "/"
-    case sync         // Options / Cmd-S
-    case info         // Square / i — open the game detail page
-    case folderPrev   // L1 / [
-    case folderNext   // R1 / ]
+    case confirm  // A / Return
+    case back  // B / Esc
+    case remove  // X / Delete
+    case toggleSearch  // Menu / Cmd-F / "/"
+    case sync  // Options / Cmd-S
+    case info  // Square / i — open the game detail page
+    case folderPrev  // L1 / [
+    case folderNext  // R1 / ]
 }
 
 /// One button on the game detail page. `toggleFolder` carries the folder id it acts on.
@@ -33,7 +33,10 @@ enum SearchScope { case catalog, library }
 enum LibraryZone { case shelf, topBar }
 
 /// A focusable item in the top bar. `.folder(nil)` is the "All Games" tab.
-enum TopBarItem: Equatable { case folder(String?), sort, profile }
+enum TopBarItem: Equatable {
+    case folder(String?)
+    case sort, profile
+}
 
 /// A quick-action in the profile dropdown, top-right of the library. `.surprise` is the
 /// random-game picker; the rest mirror existing shortcuts so they're reachable by mouse.
@@ -51,15 +54,22 @@ enum CustomizeSection: Int, CaseIterable { case image, logo, video, theme, actio
 /// A control inside an entered customize section, stepped Left/Right. `.volume` is special: on it,
 /// Left/Right adjust the value instead of moving off it. `.sgdb` opens the SteamGridDB picker;
 /// `.clearCard` drops a custom cover set from it.
-enum CustomizeControl: Equatable { case set, sgdb, clear, clearCard, audio, volume, playTrailer, done }
+enum CustomizeControl: Equatable {
+    case set, sgdb, clear, clearCard, audio, volume, playTrailer, done
+}
 
 /// Which text field the on-screen keyboard is currently feeding.
 enum KeyboardTarget: Equatable {
-    case search, playerName, folderName(String), sgdbKey, sgdbQuery, draftName
+    case search, playerName
+    case folderName(String)
+    case sgdbKey, sgdbQuery, draftName
 }
 
 /// One key on the on-screen keyboard.
-enum KeyboardKey: Equatable { case char(String), space, backspace, shift, done }
+enum KeyboardKey: Equatable {
+    case char(String)
+    case space, backspace, shift, done
+}
 
 /// A control on the folder-edit popup, stepped with Up/Down.
 enum FolderEditControl: Int, CaseIterable { case name, color, delete, done }
@@ -68,7 +78,8 @@ enum FolderEditControl: Int, CaseIterable { case name, color, delete, done }
 enum AccountFocus: Equatable, Hashable {
     case name, sort, musicToggle, volume, openMusicFolder, reloadMusic
     case accent, standby, bootBehavior
-    case folder(String), newFolder, switchProfile, done
+    case folder(String)
+    case newFolder, switchProfile, done
 }
 
 @MainActor
@@ -83,7 +94,13 @@ final class AppModel: ObservableObject {
     @Published var mode: Mode = .library
     @Published var library: [Game] = []
     @Published var catalog: [Game] = []
-    @Published var focusedIndex = 0 { didSet { shelfAction = .none; shelfMenuOpen = false; prefetchAroundFocus() } }
+    @Published var focusedIndex = 0 {
+        didSet {
+            shelfAction = .none
+            shelfMenuOpen = false
+            prefetchAroundFocus()
+        }
+    }
     @Published var searchQuery = "" {
         didSet { updateSearchResults() }
     }
@@ -183,7 +200,9 @@ final class AppModel: ObservableObject {
     private var standbyTimer: Timer?
     /// Idle time before the screensaver, from the user's setting (minutes). Clamped so a stray
     /// value can't disable standby entirely or thrash it on.
-    private var standbyDelay: TimeInterval { TimeInterval(min(120, max(1, config.standbyMinutes)) * 60) }
+    private var standbyDelay: TimeInterval {
+        TimeInterval(min(120, max(1, config.standbyMinutes)) * 60)
+    }
 
     @Published var libraryZone: LibraryZone = .shelf
     @Published var topBarIndex = 0
@@ -284,8 +303,10 @@ final class AppModel: ObservableObject {
 
     /// Controller-friendly key entry: read the key straight off the system clipboard.
     func pasteSGDBKey() {
-        guard let pasted = NSPasteboard.general.string(forType: .string)?
-            .trimmingCharacters(in: .whitespacesAndNewlines), !pasted.isEmpty else {
+        guard
+            let pasted = NSPasteboard.general.string(forType: .string)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !pasted.isEmpty
+        else {
             sgdbError = "Clipboard is empty — copy your API key first"
             Sound.back()
             return
@@ -358,7 +379,8 @@ final class AppModel: ObservableObject {
                     self?.sgdbImages = images
                 } catch {
                     guard !Task.isCancelled else { return }
-                    self?.sgdbError = "Couldn't find Steam screenshots for this title — try Banners instead"
+                    self?.sgdbError =
+                        "Couldn't find Steam screenshots for this title — try Banners instead"
                 }
                 self?.sgdbLoading = false
             }
@@ -443,9 +465,9 @@ final class AppModel: ObservableObject {
             case .confirm:
                 if sgdbImages.indices.contains(sgdbIndex) { applySGDB(sgdbImages[sgdbIndex]) }
             case .remove:
-                sgdbHideUI = true   // Triangle → clean look at the main menu
+                sgdbHideUI = true  // Triangle → clean look at the main menu
                 Sound.tick()
-            case .folderPrev: stepSGDBKind(-1)   // L1 / R1 step the art pools
+            case .folderPrev: stepSGDBKind(-1)  // L1 / R1 step the art pools
             case .folderNext: stepSGDBKind(1)
             case .info: beginKeyboard(.sgdbQuery, initial: sgdbQuery, title: "Search SteamGridDB")
             case .back:
@@ -467,9 +489,9 @@ final class AppModel: ObservableObject {
         case .confirm:
             if sgdbImages.indices.contains(sgdbIndex) { applySGDB(sgdbImages[sgdbIndex]) }
         case .remove:
-            sgdbHideUI = true   // Triangle → clean look at the main menu
+            sgdbHideUI = true  // Triangle → clean look at the main menu
             Sound.tick()
-        case .folderPrev: stepSGDBKind(-1)   // L1 / R1 step the art pools
+        case .folderPrev: stepSGDBKind(-1)  // L1 / R1 step the art pools
         case .folderNext: stepSGDBKind(1)
         case .info:
             // Square → re-open the keyboard to edit the search text.
@@ -512,7 +534,10 @@ final class AppModel: ObservableObject {
         customizeEditing = false
         customizeControl = 0
     }
-    func closeCustomize() { customizeGameID = nil; customizeEditing = false }
+    func closeCustomize() {
+        customizeGameID = nil
+        customizeEditing = false
+    }
     func bumpCustomize() { customizeRevision += 1 }
 
     /// Controls available in a section, given what the game currently has assigned.
@@ -542,20 +567,32 @@ final class AppModel: ObservableObject {
     }
 
     private func handleCustomize(_ event: InputEvent) {
-        guard let game = customizeGame else { closeCustomize(); return }
+        guard let game = customizeGame else {
+            closeCustomize()
+            return
+        }
         if customizeEditing {
             let controls = customizeControls(customizeSection, game: game)
-            let onVolume = controls.indices.contains(customizeControl) && controls[customizeControl] == .volume
+            let onVolume =
+                controls.indices.contains(customizeControl) && controls[customizeControl] == .volume
             switch event {
             case .up, .down, .back:
                 customizeEditing = false
                 Sound.back()
             case .left:
-                if onVolume { nudgeVolume(game, -0.05) }
-                else { customizeControl = max(0, customizeControl - 1); Sound.tick() }
+                if onVolume {
+                    nudgeVolume(game, -0.05)
+                } else {
+                    customizeControl = max(0, customizeControl - 1)
+                    Sound.tick()
+                }
             case .right:
-                if onVolume { nudgeVolume(game, 0.05) }
-                else { customizeControl = min(controls.count - 1, customizeControl + 1); Sound.tick() }
+                if onVolume {
+                    nudgeVolume(game, 0.05)
+                } else {
+                    customizeControl = min(controls.count - 1, customizeControl + 1)
+                    Sound.tick()
+                }
             case .confirm, .info:
                 activateCustomizeControl(game)
             default:
@@ -593,18 +630,32 @@ final class AppModel: ObservableObject {
         switch (customizeSection, controls[customizeControl]) {
         case (.image, .set): pickCustomImage(game)
         case (.image, .sgdb): openSGDB(game)
-        case (.image, .clear): CustomStore.clearImage(game.id); bumpCustomize()
-        case (.image, .clearCard): CustomStore.clearCard(game.id); bumpCustomize()
+        case (.image, .clear):
+            CustomStore.clearImage(game.id)
+            bumpCustomize()
+        case (.image, .clearCard):
+            CustomStore.clearCard(game.id)
+            bumpCustomize()
         case (.logo, .set): pickCustomLogo(game)
         case (.logo, .sgdb): openSGDB(game, kind: .logo)
-        case (.logo, .clear): CustomStore.clearLogo(game.id); bumpCustomize()
+        case (.logo, .clear):
+            CustomStore.clearLogo(game.id)
+            bumpCustomize()
         case (.video, .set): pickCustomVideo(game)
-        case (.video, .clear): CustomStore.clearVideo(game.id); bumpCustomize()
-        case (.video, .audio): CustomStore.setMuted(game.id, !CustomStore.isMuted(game.id)); bumpCustomize()
+        case (.video, .clear):
+            CustomStore.clearVideo(game.id)
+            bumpCustomize()
+        case (.video, .audio):
+            CustomStore.setMuted(game.id, !CustomStore.isMuted(game.id))
+            bumpCustomize()
         case (.theme, .set): pickCustomTheme(game)
         case (.theme, .clear): clearCustomTheme(game)
-        case (.actions, .playTrailer): closeCustomize(); playTrailer()
-        case (.actions, .done): closeCustomize(); Sound.back()
+        case (.actions, .playTrailer):
+            closeCustomize()
+            playTrailer()
+        case (.actions, .done):
+            closeCustomize()
+            Sound.back()
         default: break
         }
         // Clearing/setting changes which controls exist — keep the index in range.
@@ -630,24 +681,36 @@ final class AppModel: ObservableObject {
     }
 
     private func clearCustomTheme(_ game: Game) {
-        if let old = ThemeStore.themeURL(gameID: game.id) { try? FileManager.default.removeItem(at: old) }
+        if let old = ThemeStore.themeURL(gameID: game.id) {
+            try? FileManager.default.removeItem(at: old)
+        }
         bumpCustomize()
     }
 
     // Shared pickers — used by both the pointer (CustomizeView) and the controller handler.
     func pickCustomImage(_ game: Game) {
-        if let url = openFilePanel([.image]) { CustomStore.setImage(game.id, from: url); bumpCustomize() }
+        if let url = openFilePanel([.image]) {
+            CustomStore.setImage(game.id, from: url)
+            bumpCustomize()
+        }
     }
     func pickCustomVideo(_ game: Game) {
         if let url = openFilePanel([.movie, .video, .mpeg4Movie, .quickTimeMovie]) {
-            CustomStore.setVideo(game.id, from: url); bumpCustomize()
+            CustomStore.setVideo(game.id, from: url)
+            bumpCustomize()
         }
     }
     func pickCustomLogo(_ game: Game) {
-        if let url = openFilePanel([.image]) { CustomStore.setLogo(game.id, from: url); bumpCustomize() }
+        if let url = openFilePanel([.image]) {
+            CustomStore.setLogo(game.id, from: url)
+            bumpCustomize()
+        }
     }
     func pickCustomTheme(_ game: Game) {
-        if let url = openFilePanel([.audio]) { setTheme(for: game, from: url); bumpCustomize() }
+        if let url = openFilePanel([.audio]) {
+            setTheme(for: game, from: url)
+            bumpCustomize()
+        }
     }
 
     private func openFilePanel(_ types: [UTType]) -> URL? {
@@ -697,7 +760,7 @@ final class AppModel: ObservableObject {
     /// Profile-page focus + inline text editing.
     @Published var accountIndex = 0
     @Published var accountEditing = false
-    @Published var editingFolderID: String?   // nil while editing means the name field
+    @Published var editingFolderID: String?  // nil while editing means the name field
 
     /// Raw left-stick vector (x right+, y up+), updated by InputRouter; drives the particle
     /// background drift. Kept non-published so 30 Hz updates don't churn SwiftUI.
@@ -726,7 +789,9 @@ final class AppModel: ObservableObject {
 
     /// Global config (profile roster + app-wide prefs), shared across profiles.
     private var configFile: URL { Self.supportDir.appendingPathComponent("app.json") }
-    private var profilesDir: URL { Self.supportDir.appendingPathComponent("profiles", isDirectory: true) }
+    private var profilesDir: URL {
+        Self.supportDir.appendingPathComponent("profiles", isDirectory: true)
+    }
     /// The active profile's private folder. Falls back to a `default` slot before a profile is
     /// chosen, so nothing crashes if a save races the boot flow.
     private var profileDir: URL {
@@ -745,13 +810,15 @@ final class AppModel: ObservableObject {
     /// Persisted so search keeps working even after GFN evicts its cache.
     private var extrasFile: URL { Self.supportDir.appendingPathComponent("catalog-extra.json") }
 
-    private static let catalogURL = URL(string: "https://static.nvidiagrid.net/supported-public-game-list/locales/gfnpc-en-US.json")!
+    private static let catalogURL = URL(
+        string: "https://static.nvidiagrid.net/supported-public-game-list/locales/gfnpc-en-US.json")!
     private static let catalogMaxAge: TimeInterval = 24 * 60 * 60
 
     // MARK: - Lifecycle
 
     func start() {
-        try? FileManager.default.createDirectory(at: Self.supportDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(
+            at: Self.supportDir, withIntermediateDirectories: true)
         loadConfig()
         migrateLegacyIfNeeded()
         MusicPlayer.shared.onTrackChange = { [weak self] name in self?.showToast("♪ \(name)") }
@@ -759,7 +826,7 @@ final class AppModel: ObservableObject {
         MusicPlayer.shared.configure(enabled: true, volume: 0.5)
         startStandbyWatch()
         watchForSessionEnd()
-        Task { await loadCatalog() }   // the GFN catalog is shared across profiles
+        Task { await loadCatalog() }  // the GFN catalog is shared across profiles
     }
 
     // MARK: - Playtime
@@ -775,8 +842,11 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
         ) { [weak self] note in
-            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  app.bundleIdentifier == Self.gfnBundleID else { return }
+            guard
+                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey]
+                    as? NSRunningApplication,
+                app.bundleIdentifier == Self.gfnBundleID
+            else { return }
             MainActor.assumeIsolated { self?.endPlaySession() }
         }
         NotificationCenter.default.addObserver(
@@ -797,12 +867,15 @@ final class AppModel: ObservableObject {
         activeSession = nil
         let seconds = Date().timeIntervalSince(session.start)
         guard seconds >= Self.minSessionSeconds,
-              let index = library.firstIndex(where: { $0.id == session.gameID }) else { return }
+            let index = library.firstIndex(where: { $0.id == session.gameID })
+        else { return }
         library[index].playSeconds = (library[index].playSeconds ?? 0) + seconds
         saveLibrary()
         // Log the session for the stats dashboard (trends, streaks, heatmaps).
-        history.append(PlaySession(gameID: session.gameID, title: library[index].title,
-                                   start: session.start, seconds: seconds))
+        history.append(
+            PlaySession(
+                gameID: session.gameID, title: library[index].title,
+                start: session.start, seconds: seconds))
         if history.count > 4000 { history.removeFirst(history.count - 4000) }
         saveHistory()
     }
@@ -819,7 +892,7 @@ final class AppModel: ObservableObject {
     /// so a bumped stick or stray press can't yank you out of standby by accident.
     func noteActivity() {
         lastActivity = Date()
-        MusicPlayer.shared.ensurePlaying()   // resume if playback stopped out from under us
+        MusicPlayer.shared.ensurePlaying()  // resume if playback stopped out from under us
     }
 
     /// Drop into standby on demand (profile menu). Same screensaver the idle watcher shows;
@@ -857,13 +930,20 @@ final class AppModel: ObservableObject {
 
     func handle(_ event: InputEvent) {
         // The on-screen keyboard owns input wherever it's up (onboarding name, search, …).
-        if keyboardActive { handleKeyboard(event); return }
+        if keyboardActive {
+            handleKeyboard(event)
+            return
+        }
 
         // Pre-library flow is driven by stage, not mode.
         switch stage {
         case .boot: return
-        case .onboarding: handleOnboarding(event); return
-        case .profileSelect: handleProfileSelect(event); return
+        case .onboarding:
+            handleOnboarding(event)
+            return
+        case .profileSelect:
+            handleProfileSelect(event)
+            return
         case .ready: break
         }
 
@@ -882,11 +962,26 @@ final class AppModel: ObservableObject {
     }
 
     private func handleLibrary(_ event: InputEvent) {
-        if trailerMode { handleTrailer(event); return }
-        if sgdbOpen { handleSGDB(event); return }
-        if customizeGameID != nil { handleCustomize(event); return }
-        if profileMenuOpen { handleProfileMenu(event); return }
-        if shelfMenuOpen { handleShelfMenu(event); return }
+        if trailerMode {
+            handleTrailer(event)
+            return
+        }
+        if sgdbOpen {
+            handleSGDB(event)
+            return
+        }
+        if customizeGameID != nil {
+            handleCustomize(event)
+            return
+        }
+        if profileMenuOpen {
+            handleProfileMenu(event)
+            return
+        }
+        if shelfMenuOpen {
+            handleShelfMenu(event)
+            return
+        }
         if libraryZone == .topBar {
             switch event {
             case .left: moveTopBar(by: -1)
@@ -897,7 +992,7 @@ final class AppModel: ObservableObject {
             case .sync: syncFromGFN()
             case .folderPrev: cycleFolder(by: -1)
             case .folderNext: cycleFolder(by: 1)
-            case .info: editFocusedTopBarFolder()   // Square on a folder tab → edit it
+            case .info: editFocusedTopBarFolder()  // Square on a folder tab → edit it
             case .up, .remove: break
             }
             return
@@ -908,10 +1003,10 @@ final class AppModel: ObservableObject {
             switch event {
             case .left: moveFocus(by: -1)
             case .right: moveFocus(by: 1)
-            case .up: enterTopBar()     // lift focus into the top bar (folders / sort / profile)
+            case .up: enterTopBar()  // lift focus into the top bar (folders / sort / profile)
             case .down: focusShelfAction(.play)
             case .confirm: launchFocused()
-            case .info: openDetail()    // Square / i → open the game page
+            case .info: openDetail()  // Square / i → open the game page
             case .remove: removeFocused()
             case .toggleSearch: openSearch()
             case .sync: syncFromGFN()
@@ -922,7 +1017,7 @@ final class AppModel: ObservableObject {
         case .play:
             switch event {
             case .right: focusShelfAction(.info)
-            case .left: moveFocus(by: -1)          // resets shelfAction via focusedIndex
+            case .left: moveFocus(by: -1)  // resets shelfAction via focusedIndex
             case .up, .back: focusShelfAction(.none)
             case .down: break
             case .confirm: launchFocused()
@@ -936,10 +1031,10 @@ final class AppModel: ObservableObject {
         case .info:
             switch event {
             case .left: focusShelfAction(.play)
-            case .right: moveFocus(by: 1)          // resets shelfAction via focusedIndex
+            case .right: moveFocus(by: 1)  // resets shelfAction via focusedIndex
             case .up, .back: focusShelfAction(.none)
             case .down: break
-            case .confirm: openShelfMenu()         // Cross on ⋯ → the per-game dropdown
+            case .confirm: openShelfMenu()  // Cross on ⋯ → the per-game dropdown
             case .info: openDetail()
             case .remove: removeFocused()
             case .toggleSearch: openSearch()
@@ -996,7 +1091,9 @@ final class AppModel: ObservableObject {
         let items = topBarItems
         guard items.indices.contains(topBarIndex) else { return }
         switch items[topBarIndex] {
-        case .folder(let id): setActiveFolder(id); libraryZone = .shelf
+        case .folder(let id):
+            setActiveFolder(id)
+            libraryZone = .shelf
         case .sort: cycleSort(by: 1)
         case .profile: openProfileMenu()
         }
@@ -1008,7 +1105,7 @@ final class AppModel: ObservableObject {
 
     func openProfileMenu() {
         profileMenuIndex = 0
-        topBarIndex = max(0, topBarItems.count - 1)   // keep the chip lit while open + after close
+        topBarIndex = max(0, topBarItems.count - 1)  // keep the chip lit while open + after close
         libraryZone = .topBar
         profileMenuOpen = true
         Sound.select()
@@ -1181,7 +1278,9 @@ final class AppModel: ObservableObject {
     var focusedTopBarFolderID: String? {
         guard libraryZone == .topBar else { return nil }
         let items = topBarItems
-        guard items.indices.contains(topBarIndex), case .folder(let id?) = items[topBarIndex] else { return nil }
+        guard items.indices.contains(topBarIndex), case .folder(let id?) = items[topBarIndex] else {
+            return nil
+        }
         return id
     }
 
@@ -1194,7 +1293,9 @@ final class AppModel: ObservableObject {
     // MARK: - Folder-edit popup
 
     var folderBeingEdited: Folder? { folders.first { $0.id == folderEditID } }
-    var folderEditControl: FolderEditControl { FolderEditControl(rawValue: folderEditIndex) ?? .name }
+    var folderEditControl: FolderEditControl {
+        FolderEditControl(rawValue: folderEditIndex) ?? .name
+    }
 
     func openFolderEdit(_ id: String) {
         profileMenuOpen = false
@@ -1207,7 +1308,10 @@ final class AppModel: ObservableObject {
 
     func closeFolderEdit() {
         // Editing a name? First keystroke-set commits, then Back closes the popup.
-        if folderEditNameEditing { commitFolderName(); return }
+        if folderEditNameEditing {
+            commitFolderName()
+            return
+        }
         mode = .library
         libraryZone = .topBar
         folderEditID = nil
@@ -1238,7 +1342,9 @@ final class AppModel: ObservableObject {
     }
 
     private func adjustFolderEdit(by delta: Int) {
-        if folderEditControl == .color, let id = folderEditID { cycleFolderColor(id: id, by: delta) }
+        if folderEditControl == .color, let id = folderEditID {
+            cycleFolderColor(id: id, by: delta)
+        }
     }
 
     private func activateFolderEdit() {
@@ -1246,7 +1352,8 @@ final class AppModel: ObservableObject {
         switch folderEditControl {
         case .name:
             if controllerConnected {
-                beginKeyboard(.folderName(id), initial: folderBeingEdited?.name ?? "", title: "Folder name")
+                beginKeyboard(
+                    .folderName(id), initial: folderBeingEdited?.name ?? "", title: "Folder name")
             } else {
                 folderEditNameEditing = true
             }
@@ -1281,8 +1388,8 @@ final class AppModel: ObservableObject {
         case .down: moveSearchFocus(by: searchColumns)
         case .confirm: toggleFocusedSearchResult()
         case .back, .toggleSearch: closeSearch()
-        case .info: beginKeyboard(.search, initial: searchQuery, title: "Search games")   // reopen the keyboard
-        case .remove: toggleSearchScope()   // Triangle flips Catalog ↔ My Library
+        case .info: beginKeyboard(.search, initial: searchQuery, title: "Search games")  // reopen the keyboard
+        case .remove: toggleSearchScope()  // Triangle flips Catalog ↔ My Library
         case .sync, .folderPrev, .folderNext: break
         }
     }
@@ -1306,7 +1413,7 @@ final class AppModel: ObservableObject {
         keyboardTitle = title
         keyboardRow = 1
         keyboardCol = 0
-        keyboardShift = initial.isEmpty && target != .search   // capitalize a fresh name
+        keyboardShift = initial.isEmpty && target != .search  // capitalize a fresh name
         keyboardActive = true
         Sound.select()
     }
@@ -1317,8 +1424,12 @@ final class AppModel: ObservableObject {
             case .search: searchQuery = keyboardText
             case .playerName: setPlayerName(keyboardText)
             case .folderName(let id): renameFolder(id: id, to: keyboardText)
-            case .sgdbKey: sgdbKeyDraft = keyboardText; saveSGDBKey()
-            case .sgdbQuery: sgdbQuery = keyboardText; runSGDBSearch()
+            case .sgdbKey:
+                sgdbKeyDraft = keyboardText
+                saveSGDBKey()
+            case .sgdbQuery:
+                sgdbQuery = keyboardText
+                runSGDBSearch()
             case .draftName:
                 let trimmed = keyboardText.trimmingCharacters(in: .whitespaces)
                 draftName = trimmed.isEmpty ? "Player" : trimmed
@@ -1336,9 +1447,9 @@ final class AppModel: ObservableObject {
         case .up: moveKeyboard(dRow: -1, dCol: 0)
         case .down: moveKeyboard(dRow: 1, dCol: 0)
         case .confirm: pressKeyboardKey()
-        case .back: endTextEntry(commit: keyboardTarget == .search)   // search keeps what you typed
-        case .remove, .info: keyboardBackspace()                      // Triangle / Square = backspace
-        case .toggleSearch, .sync: endTextEntry(commit: true)         // Menu = done
+        case .back: endTextEntry(commit: keyboardTarget == .search)  // search keeps what you typed
+        case .remove, .info: keyboardBackspace()  // Triangle / Square = backspace
+        case .toggleSearch, .sync: endTextEntry(commit: true)  // Menu = done
         case .folderPrev, .folderNext: break
         }
     }
@@ -1355,19 +1466,25 @@ final class AppModel: ObservableObject {
     /// Type the focused key. Public so the pointer can click keys too.
     func pressKeyboardKey(row: Int? = nil, col: Int? = nil) {
         let rows = Self.keyboardRows
-        let r = row ?? keyboardRow, c = col ?? keyboardCol
+        let r = row ?? keyboardRow
+        let c = col ?? keyboardCol
         guard rows.indices.contains(r), rows[r].indices.contains(c) else { return }
-        keyboardRow = r; keyboardCol = c
+        keyboardRow = r
+        keyboardCol = c
         switch rows[r][c] {
         case .char(let ch):
             keyboardText.append(keyboardShift ? ch.uppercased() : ch)
-            applyLiveText(); Sound.tick()
+            applyLiveText()
+            Sound.tick()
         case .space:
-            keyboardText.append(" "); applyLiveText(); Sound.tick()
+            keyboardText.append(" ")
+            applyLiveText()
+            Sound.tick()
         case .backspace:
             keyboardBackspace()
         case .shift:
-            keyboardShift.toggle(); Sound.tick()
+            keyboardShift.toggle()
+            Sound.tick()
         case .done:
             endTextEntry(commit: true)
         }
@@ -1376,7 +1493,8 @@ final class AppModel: ObservableObject {
     func keyboardBackspace() {
         guard !keyboardText.isEmpty else { return }
         keyboardText.removeLast()
-        applyLiveText(); Sound.tick()
+        applyLiveText()
+        Sound.tick()
     }
 
     /// Search filters as you type; name fields only apply on Done.
@@ -1391,7 +1509,7 @@ final class AppModel: ObservableObject {
         case .left, .up: moveDetailAction(by: -1)
         case .right, .down: moveDetailAction(by: 1)
         case .confirm: activateDetailAction()
-        case .back: closeDetail()          // Circle / Esc → out
+        case .back: closeDetail()  // Circle / Esc → out
         case .remove: if let game = detailGame { remove(game) }
         case .info, .toggleSearch, .sync, .folderPrev, .folderNext: break
         }
@@ -1417,8 +1535,10 @@ final class AppModel: ObservableObject {
     // MARK: - Account navigation
 
     var accountItems: [AccountFocus] {
-        var items: [AccountFocus] = [.name, .sort, .musicToggle, .volume, .openMusicFolder, .reloadMusic,
-                                     .accent, .standby, .bootBehavior]
+        var items: [AccountFocus] = [
+            .name, .sort, .musicToggle, .volume, .openMusicFolder, .reloadMusic,
+            .accent, .standby, .bootBehavior,
+        ]
         items += folders.map { .folder($0.id) }
         items += [.newFolder, .switchProfile, .done]
         return items
@@ -1450,8 +1570,11 @@ final class AppModel: ObservableObject {
     private func activateAccount() {
         switch accountFocus {
         case .name:
-            if controllerConnected { beginKeyboard(.playerName, initial: playerName, title: "Your name") }
-            else { beginEditing(folderID: nil) }
+            if controllerConnected {
+                beginKeyboard(.playerName, initial: playerName, title: "Your name")
+            } else {
+                beginEditing(folderID: nil)
+            }
         case .sort: cycleSort(by: 1)
         case .musicToggle: setMusicEnabled(!musicEnabled)
         case .volume: break
@@ -1459,15 +1582,20 @@ final class AppModel: ObservableObject {
         case .reloadMusic:
             MusicPlayer.shared.start()
             let n = MusicPlayer.shared.trackCount
-            showToast(n == 0 ? "No tracks in music folder"
-                      : n == 1 ? "1 track loaded"
-                      : "\(n) tracks loaded — shuffling")
+            showToast(
+                n == 0
+                    ? "No tracks in music folder"
+                    : n == 1
+                        ? "1 track loaded"
+                        : "\(n) tracks loaded — shuffling")
         case .accent: cycleAccent(1)
         case .standby: setStandbyMinutes(config.standbyMinutes + 5)
         case .bootBehavior: setBootBehavior(config.bootBehavior == .select ? .auto : .select)
         case .switchProfile: openProfileSwitcher()
-        case .folder(let id): openFolderEdit(id)          // folder editing now lives in its own popup
-        case .newFolder: let f = createFolder(named: "New Folder"); openFolderEdit(f.id)
+        case .folder(let id): openFolderEdit(id)  // folder editing now lives in its own popup
+        case .newFolder:
+            let f = createFolder(named: "New Folder")
+            openFolderEdit(f.id)
         case .done, .none: closeAccount()
         }
     }
@@ -1509,7 +1637,10 @@ final class AppModel: ObservableObject {
             return true
         }
         noteActivity()
-        if !booted { finishBoot(); return true }
+        if !booted {
+            finishBoot()
+            return true
+        }
 
         // GFN-missing overlay swallows everything; Esc / Return / Space dismiss it.
         if gfnAlertVisible {
@@ -1530,7 +1661,8 @@ final class AppModel: ObservableObject {
             case 51, 117: keyboardBackspace()
             default:
                 if let typed = event.charactersIgnoringModifiers, typed.count == 1,
-                   let scalar = typed.unicodeScalars.first, scalar.value >= 32, scalar.value != 127 {
+                    let scalar = typed.unicodeScalars.first, scalar.value >= 32, scalar.value != 127
+                {
                     keyboardText.append(typed)
                     applyLiveText()
                 }
@@ -1542,113 +1674,242 @@ final class AppModel: ObservableObject {
         // to events; printable keys fall through so a focused text field (the name) still types.
         if stage == .onboarding || stage == .profileSelect {
             switch event.keyCode {
-            case 123: handle(.left); return true
-            case 124: handle(.right); return true
-            case 125: handle(.down); return true
-            case 126: handle(.up); return true
-            case 36, 76: handle(.confirm); return true
-            case 51, 117: handle(.remove); return true
-            case 53: handle(.back); return true
+            case 123:
+                handle(.left)
+                return true
+            case 124:
+                handle(.right)
+                return true
+            case 125:
+                handle(.down)
+                return true
+            case 126:
+                handle(.up)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 51, 117:
+                handle(.remove)
+                return true
+            case 53:
+                handle(.back)
+                return true
             default: return false
             }
         }
 
         let cmd = event.modifierFlags.contains(.command)
         let chars = event.charactersIgnoringModifiers
-        if cmd && chars == "f" { handle(.toggleSearch); return true }
-        if cmd && chars == "l" { openLibrarySearch(); return true }
-        if cmd && chars == "s" { handle(.sync); return true }
-        if cmd && chars == "," { toggleAccount(); return true }
+        if cmd && chars == "f" {
+            handle(.toggleSearch)
+            return true
+        }
+        if cmd && chars == "l" {
+            openLibrarySearch()
+            return true
+        }
+        if cmd && chars == "s" {
+            handle(.sync)
+            return true
+        }
+        if cmd && chars == "," {
+            toggleAccount()
+            return true
+        }
 
         switch mode {
         case .library:
             // SteamGridDB picker up: only Esc is intercepted (close); everything else falls
             // through so the search / API-key text fields can type freely. Pointer applies picks.
             if sgdbOpen {
-                if event.keyCode == 53 { handle(.back); return true }
+                if event.keyCode == 53 {
+                    handle(.back)
+                    return true
+                }
                 return false
             }
             switch event.keyCode {
-            case 123: handle(.left); return true
-            case 124: handle(.right); return true
-            case 125: handle(.down); return true
-            case 126: handle(.up); return true
-            case 36, 76: handle(.confirm); return true
-            case 51, 117: handle(.remove); return true
-            case 53: handle(.back); return true   // Esc closes the profile dropdown
-            case 115: jumpToShelfStart(); return true   // Home → first game
+            case 123:
+                handle(.left)
+                return true
+            case 124:
+                handle(.right)
+                return true
+            case 125:
+                handle(.down)
+                return true
+            case 126:
+                handle(.up)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 51, 117:
+                handle(.remove)
+                return true
+            case 53:
+                handle(.back)
+                return true  // Esc closes the profile dropdown
+            case 115:
+                jumpToShelfStart()
+                return true  // Home → first game
             default:
                 switch chars {
-                case "/": handle(.toggleSearch); return true
-                case "i": handle(.info); return true
-                case "[": handle(.folderPrev); return true
-                case "]": handle(.folderNext); return true
-                case "1": setSortMode(.recent); return true
-                case "2": setSortMode(.mostPlayed); return true
-                case "3": setSortMode(.alphabetical); return true
-                case "4": setSortMode(.store); return true
-                case "m": setMusicEnabled(!musicEnabled); return true
+                case "/":
+                    handle(.toggleSearch)
+                    return true
+                case "i":
+                    handle(.info)
+                    return true
+                case "[":
+                    handle(.folderPrev)
+                    return true
+                case "]":
+                    handle(.folderNext)
+                    return true
+                case "1":
+                    setSortMode(.recent)
+                    return true
+                case "2":
+                    setSortMode(.mostPlayed)
+                    return true
+                case "3":
+                    setSortMode(.alphabetical)
+                    return true
+                case "4":
+                    setSortMode(.store)
+                    return true
+                case "m":
+                    setMusicEnabled(!musicEnabled)
+                    return true
                 default: return false
                 }
             }
         case .search:
             // Left/right stay with the text field so the caret still works.
             switch event.keyCode {
-            case 53: handle(.back); return true
-            case 125: handle(.down); return true
-            case 126: handle(.up); return true
-            case 36, 76: handle(.confirm); return true
-            case 48: toggleSearchScope(); return true   // Tab flips Catalog ↔ My Library
+            case 53:
+                handle(.back)
+                return true
+            case 125:
+                handle(.down)
+                return true
+            case 126:
+                handle(.up)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 48:
+                toggleSearchScope()
+                return true  // Tab flips Catalog ↔ My Library
             default: return false
             }
         case .detail:
             switch event.keyCode {
-            case 123: handle(.left); return true
-            case 124: handle(.right); return true
-            case 53: handle(.back); return true
-            case 36, 76: handle(.confirm); return true
-            case 51, 117: handle(.remove); return true
+            case 123:
+                handle(.left)
+                return true
+            case 124:
+                handle(.right)
+                return true
+            case 53:
+                handle(.back)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 51, 117:
+                handle(.remove)
+                return true
             default: return false
             }
         case .account:
             if accountEditing {
                 // Let the text field type; only Esc / Return commit the edit.
-                if [53, 36, 76].contains(Int(event.keyCode)) { handle(.back); return true }
+                if [53, 36, 76].contains(Int(event.keyCode)) {
+                    handle(.back)
+                    return true
+                }
                 return false
             }
             switch event.keyCode {
-            case 123: handle(.left); return true
-            case 124: handle(.right); return true
-            case 125: handle(.down); return true
-            case 126: handle(.up); return true
-            case 36, 76: handle(.confirm); return true
-            case 51, 117: handle(.remove); return true
-            case 53: handle(.back); return true
+            case 123:
+                handle(.left)
+                return true
+            case 124:
+                handle(.right)
+                return true
+            case 125:
+                handle(.down)
+                return true
+            case 126:
+                handle(.up)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 51, 117:
+                handle(.remove)
+                return true
+            case 53:
+                handle(.back)
+                return true
             default: return false
             }
         case .folderEdit:
             if folderEditNameEditing {
-                if [53, 36, 76].contains(Int(event.keyCode)) { handle(.back); return true }
+                if [53, 36, 76].contains(Int(event.keyCode)) {
+                    handle(.back)
+                    return true
+                }
                 return false
             }
             switch event.keyCode {
-            case 123: handle(.left); return true
-            case 124: handle(.right); return true
-            case 125: handle(.down); return true
-            case 126: handle(.up); return true
-            case 36, 76: handle(.confirm); return true
-            case 51, 117: handle(.remove); return true
-            case 53: handle(.back); return true
+            case 123:
+                handle(.left)
+                return true
+            case 124:
+                handle(.right)
+                return true
+            case 125:
+                handle(.down)
+                return true
+            case 126:
+                handle(.up)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 51, 117:
+                handle(.remove)
+                return true
+            case 53:
+                handle(.back)
+                return true
             default: return false
             }
         case .stats:
             switch event.keyCode {
-            case 123: handle(.left); return true    // previous time range
-            case 124: handle(.right); return true   // next time range
-            case 125: handle(.down); return true
-            case 126: handle(.up); return true
-            case 36, 76: handle(.confirm); return true
-            case 53: handle(.back); return true
+            case 123:
+                handle(.left)
+                return true  // previous time range
+            case 124:
+                handle(.right)
+                return true  // next time range
+            case 125:
+                handle(.down)
+                return true
+            case 126:
+                handle(.up)
+                return true
+            case 36, 76:
+                handle(.confirm)
+                return true
+            case 53:
+                handle(.back)
+                return true
             default: return false
             }
         }
@@ -1691,7 +1952,8 @@ final class AppModel: ObservableObject {
     /// `library` is kept sorted, so the filtered slice preserves the chosen order.
     var visibleLibrary: [Game] {
         guard let id = activeFolderID,
-              let folder = folders.first(where: { $0.id == id }) else { return library }
+            let folder = folders.first(where: { $0.id == id })
+        else { return library }
         let members = Set(folder.gameIDs)
         return library.filter { members.contains($0.id) }
     }
@@ -1704,8 +1966,13 @@ final class AppModel: ObservableObject {
     private func prefetchAroundFocus() {
         let items: [Game]
         let index: Int
-        if mode == .search { items = searchResults; index = searchFocusedIndex }
-        else { items = visibleLibrary; index = focusedIndex }
+        if mode == .search {
+            items = searchResults
+            index = searchFocusedIndex
+        } else {
+            items = visibleLibrary
+            index = focusedIndex
+        }
         guard !items.isEmpty else { return }
         let lo = max(0, index - Self.prefetchRadius)
         let hi = min(items.count - 1, index + Self.prefetchRadius)
@@ -1735,8 +2002,10 @@ final class AppModel: ObservableObject {
 
     /// R2 pull-to-launch (DualSense adaptive trigger). Only fires from the shelf.
     func launchFromTrigger() {
-        guard booted, stage == .ready, !standby, mode == .library, !profileMenuOpen, !keyboardActive,
-              libraryZone == .shelf else { return }
+        guard booted, stage == .ready, !standby, mode == .library, !profileMenuOpen,
+            !keyboardActive,
+            libraryZone == .shelf
+        else { return }
         launchFocused()
     }
 
@@ -1861,7 +2130,8 @@ final class AppModel: ObservableObject {
             toggleFolderMembership(folderID: id, game: game)
         case .newFolder:
             let folder = createFolder(named: "New Folder", initialGame: game)
-            detailActionIndex = detailActions.firstIndex(of: .toggleFolder(folder.id)) ?? detailActionIndex
+            detailActionIndex =
+                detailActions.firstIndex(of: .toggleFolder(folder.id)) ?? detailActionIndex
             showToast("Added to a new folder — rename it in Account (⌘,)")
             Sound.select()
         }
@@ -1884,7 +2154,9 @@ final class AppModel: ObservableObject {
 
     func cycleFolder(by delta: Int) {
         let tabs = folderTabs.map(\.id)
-        guard tabs.count > 1, let current = tabs.firstIndex(where: { $0 == activeFolderID }) else { return }
+        guard tabs.count > 1, let current = tabs.firstIndex(where: { $0 == activeFolderID }) else {
+            return
+        }
         let next = (current + delta + tabs.count) % tabs.count
         setActiveFolder(tabs[next])
     }
@@ -1923,7 +2195,10 @@ final class AppModel: ObservableObject {
 
     func deleteFolder(id: String) {
         folders.removeAll { $0.id == id }
-        if activeFolderID == id { activeFolderID = nil; saveSettings() }
+        if activeFolderID == id {
+            activeFolderID = nil
+            saveSettings()
+        }
         saveFolders()
         refocus(on: focusedGame?.id)
     }
@@ -1975,8 +2250,10 @@ final class AppModel: ObservableObject {
 
     /// L2 pull from the pad. Same gating as R2's launch: only from the settled shelf.
     func openLibrarySearchFromTrigger() {
-        guard booted, stage == .ready, !standby, mode == .library, !profileMenuOpen, !keyboardActive,
-              !trailerMode, customizeGameID == nil, !sgdbOpen, !gfnAlertVisible else { return }
+        guard booted, stage == .ready, !standby, mode == .library, !profileMenuOpen,
+            !keyboardActive,
+            !trailerMode, customizeGameID == nil, !sgdbOpen, !gfnAlertVisible
+        else { return }
         openLibrarySearch()
     }
 
@@ -2019,7 +2296,8 @@ final class AppModel: ObservableObject {
 
     func focusSearchResult(id: Int) {
         guard ProcessInfo.processInfo.systemUptime >= pointerFocusBlockedUntil else { return }
-        if let index = searchResults.firstIndex(where: { $0.id == id }), index != searchFocusedIndex {
+        if let index = searchResults.firstIndex(where: { $0.id == id }), index != searchFocusedIndex
+        {
             focusChangeFromPointer = true
             searchFocusedIndex = index
         }
@@ -2040,7 +2318,8 @@ final class AppModel: ObservableObject {
             }
             scored.sort { a, b in
                 if a.rank != b.rank { return a.rank < b.rank }
-                return a.game.title.localizedCaseInsensitiveCompare(b.game.title) == .orderedAscending
+                return a.game.title.localizedCaseInsensitiveCompare(b.game.title)
+                    == .orderedAscending
             }
             searchResults = scored.map { $0.game }
         }
@@ -2064,7 +2343,10 @@ final class AppModel: ObservableObject {
     // MARK: - Account / settings
 
     func toggleAccount() {
-        if mode == .account { closeAccount(); return }
+        if mode == .account {
+            closeAccount()
+            return
+        }
         profileMenuOpen = false
         accountIndex = 0
         accountEditing = false
@@ -2165,7 +2447,8 @@ final class AppModel: ObservableObject {
 
     private func loadFolders() {
         guard let data = try? Data(contentsOf: foldersFile),
-              let saved = try? JSONDecoder().decode([Folder].self, from: data) else { return }
+            let saved = try? JSONDecoder().decode([Folder].self, from: data)
+        else { return }
         folders = saved
     }
 
@@ -2192,7 +2475,8 @@ final class AppModel: ObservableObject {
 
     private func loadSettings() {
         guard let data = try? Data(contentsOf: settingsFile),
-              let saved = try? JSONDecoder().decode(Settings.self, from: data) else { return }
+            let saved = try? JSONDecoder().decode(Settings.self, from: data)
+        else { return }
         sortMode = saved.sortMode
         musicEnabled = saved.musicEnabled
         musicVolume = saved.musicVolume
@@ -2222,15 +2506,17 @@ final class AppModel: ObservableObject {
             base = Self.recentBefore
         case .mostPlayed:
             base = { a, b in
-                let pa = a.playSeconds ?? 0, pb = b.playSeconds ?? 0
+                let pa = a.playSeconds ?? 0
+                let pb = b.playSeconds ?? 0
                 if pa != pb { return pa > pb }
-                return Self.recentBefore(a, b)   // unplayed fall back to recent/alphabetical
+                return Self.recentBefore(a, b)  // unplayed fall back to recent/alphabetical
             }
         case .alphabetical:
             base = { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         case .store:
             base = { a, b in
-                let sa = a.store ?? "", sb = b.store ?? ""
+                let sa = a.store ?? ""
+                let sb = b.store ?? ""
                 if sa.caseInsensitiveCompare(sb) != .orderedSame {
                     return sa.localizedCaseInsensitiveCompare(sb) == .orderedAscending
                 }
@@ -2248,7 +2534,7 @@ final class AppModel: ObservableObject {
     /// Most-recently-played first; unplayed games trail, alphabetically.
     private static func recentBefore(_ a: Game, _ b: Game) -> Bool {
         switch (a.lastPlayed, b.lastPlayed) {
-        case let (x?, y?): return x > y
+        case (let x?, let y?): return x > y
         case (.some, .none): return true
         case (.none, .some): return false
         case (.none, .none):
@@ -2281,7 +2567,8 @@ final class AppModel: ObservableObject {
             } else {
                 let extras = await mergeWithGFNData([])
                 if extras.isEmpty {
-                    catalogError = "Couldn't load the GeForce NOW catalog. Check your connection and reopen search."
+                    catalogError =
+                        "Couldn't load the GeForce NOW catalog. Check your connection and reopen search."
                 } else {
                     applyCatalog(extras)
                 }
@@ -2301,13 +2588,16 @@ final class AppModel: ObservableObject {
 
             var extras: [Game] = []
             if let data = try? Data(contentsOf: extrasFile),
-               let saved = try? JSONDecoder().decode([Game].self, from: data) {
+                let saved = try? JSONDecoder().decode([Game].self, from: data)
+            {
                 extras = saved
             }
             let savedIDs = Set(extras.map(\.id))
             extras.append(contentsOf: GFNLocal.cachedGames().filter { !savedIDs.contains($0.id) })
 
-            for game in extras where !known.contains(game.id) && !knownTitles.contains(GFNLocal.normalize(game.title)) {
+            for game in extras
+            where !known.contains(game.id) && !knownTitles.contains(GFNLocal.normalize(game.title))
+            {
                 known.insert(game.id)
                 knownTitles.insert(GFNLocal.normalize(game.title))
                 merged.append(game)
@@ -2334,13 +2624,26 @@ final class AppModel: ObservableObject {
             if !quiet { showToast("GeForce NOW isn't installed") }
             return
         }
-        let titles = GFNLocal.libraryTitles()
-        guard !titles.isEmpty else {
-            if !quiet { showToast("No library found — open GeForce NOW once, then sync again") }
-            return
-        }
         guard !catalog.isEmpty else {
             if !quiet { showToast("Catalog still loading — try again in a moment") }
+            return
+        }
+
+        guard !gfnSyncing else { return }
+        gfnSyncing = true
+        Task { [quiet] in
+            let titles = await Task.detached(priority: .userInitiated) { GFNLocal.libraryTitles() }
+                .value
+            gfnSyncing = false
+            applyGFNSync(titles: titles, quiet: quiet)
+        }
+    }
+
+    private var gfnSyncing = false
+
+    private func applyGFNSync(titles: [String], quiet: Bool) {
+        guard !titles.isEmpty else {
+            if !quiet { showToast("No library found, open GeForce NOW once, then sync again") }
             return
         }
 
@@ -2359,7 +2662,8 @@ final class AppModel: ObservableObject {
 
         var byTitle: [String: Game] = [:]
         for game in catalog {
-            byTitle[GFNLocal.normalize(game.title)] = byTitle[GFNLocal.normalize(game.title)] ?? game
+            byTitle[GFNLocal.normalize(game.title)] =
+                byTitle[GFNLocal.normalize(game.title)] ?? game
         }
 
         var added = 0
@@ -2387,7 +2691,10 @@ final class AppModel: ObservableObject {
         }
 
         if quiet {
-            if added > 0 { showToast("Synced — added \(added) new game\(added == 1 ? "" : "s") from GeForce NOW") }
+            if added > 0 {
+                showToast(
+                    "Synced — added \(added) new game\(added == 1 ? "" : "s") from GeForce NOW")
+            }
             return
         }
         switch (added, unresolved.count) {
@@ -2403,14 +2710,16 @@ final class AppModel: ObservableObject {
         if let maxAge {
             let attrs = try? FileManager.default.attributesOfItem(atPath: catalogFile.path)
             guard let modified = attrs?[.modificationDate] as? Date,
-                  Date().timeIntervalSince(modified) < maxAge else { return nil }
+                Date().timeIntervalSince(modified) < maxAge
+            else { return nil }
         }
         return try? JSONDecoder().decode([Game].self, from: data)
     }
 
     private func applyCatalog(_ games: [Game]) {
         var seen = Set<Int>()
-        catalog = games
+        catalog =
+            games
             .filter { seen.insert($0.id).inserted }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         if mode == .search {
@@ -2432,7 +2741,8 @@ final class AppModel: ObservableObject {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         if let data = try? encoder.encode(config) {
-            try? FileManager.default.createDirectory(at: Self.supportDir, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(
+                at: Self.supportDir, withIntermediateDirectories: true)
             try? data.write(to: configFile, options: .atomic)
         }
     }
@@ -2448,9 +2758,10 @@ final class AppModel: ObservableObject {
         var name = "Player"
         let legacySettings = root.appendingPathComponent("settings.json")
         if let data = try? Data(contentsOf: legacySettings),
-           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let saved = obj["playerName"] as? String,
-           !saved.trimmingCharacters(in: .whitespaces).isEmpty {
+            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let saved = obj["playerName"] as? String,
+            !saved.trimmingCharacters(in: .whitespaces).isEmpty
+        {
             name = saved
         }
 
@@ -2466,8 +2777,8 @@ final class AppModel: ObservableObject {
         }
         config.profiles = [profile]
         config.lastProfileID = profile.id
-        config.onboardingComplete = true   // don't drag an existing user through onboarding
-        config.bootBehavior = .select      // but do show them the new switcher once
+        config.onboardingComplete = true  // don't drag an existing user through onboarding
+        config.bootBehavior = .select  // but do show them the new switcher once
         saveConfig()
     }
 
@@ -2477,8 +2788,9 @@ final class AppModel: ObservableObject {
         if !config.onboardingComplete || config.profiles.isEmpty {
             startOnboarding(add: false)
         } else if config.bootBehavior == .auto,
-                  let last = config.lastProfileID,
-                  config.profiles.contains(where: { $0.id == last }) {
+            let last = config.lastProfileID,
+            config.profiles.contains(where: { $0.id == last })
+        {
             activateProfile(last)
             enterReady()
         } else {
@@ -2490,7 +2802,7 @@ final class AppModel: ObservableObject {
     /// Load a profile's world (library / folders / settings / history / look) into the model.
     func activateProfile(_ id: String) {
         guard config.profiles.contains(where: { $0.id == id }) else { return }
-        endPlaySession()   // bank anything in flight before swapping libraries out
+        endPlaySession()  // bank anything in flight before swapping libraries out
 
         activeProfileID = id
         config.lastProfileID = id
@@ -2503,10 +2815,18 @@ final class AppModel: ObservableObject {
         try? FileManager.default.createDirectory(at: profileDir, withIntermediateDirectories: true)
 
         // Clear the previous profile's state so a missing file can't leak stale data across.
-        library = []; libraryIDs = []; folders = []; history = []
-        sortMode = .recent; musicEnabled = true; musicVolume = 0.5
-        activeFolderID = nil; gfnSeenTitles = []
-        focusedIndex = 0; libraryZone = .shelf; shelfAction = .none
+        library = []
+        libraryIDs = []
+        folders = []
+        history = []
+        sortMode = .recent
+        musicEnabled = true
+        musicVolume = 0.5
+        activeFolderID = nil
+        gfnSeenTitles = []
+        focusedIndex = 0
+        libraryZone = .shelf
+        shelfAction = .none
 
         loadSettings()
         loadFolders()
@@ -2532,8 +2852,9 @@ final class AppModel: ObservableObject {
     @discardableResult
     func createProfile(name: String, colorIndex: Int, accentIndex: Int) -> Profile {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
-        let profile = Profile(name: trimmed.isEmpty ? "Player" : trimmed,
-                              colorIndex: colorIndex, accentIndex: accentIndex)
+        let profile = Profile(
+            name: trimmed.isEmpty ? "Player" : trimmed,
+            colorIndex: colorIndex, accentIndex: accentIndex)
         config.profiles.append(profile)
         saveConfig()
         try? FileManager.default.createDirectory(
@@ -2543,18 +2864,24 @@ final class AppModel: ObservableObject {
     }
 
     func deleteProfile(_ id: String) {
-        guard config.profiles.count > 1 else { showToast("Can't delete your only profile"); return }
+        guard config.profiles.count > 1 else {
+            showToast("Can't delete your only profile")
+            return
+        }
         let wasActive = activeProfileID == id
         config.profiles.removeAll { $0.id == id }
         if config.lastProfileID == id { config.lastProfileID = config.profiles.first?.id }
         saveConfig()
-        try? FileManager.default.removeItem(at: profilesDir.appendingPathComponent(id, isDirectory: true))
+        try? FileManager.default.removeItem(
+            at: profilesDir.appendingPathComponent(id, isDirectory: true))
         if wasActive, let next = config.profiles.first?.id { activateProfile(next) }
         Sound.back()
     }
 
     func setAccentIndex(_ index: Int) {
-        guard let i = config.profiles.firstIndex(where: { $0.id == activeProfileID }) else { return }
+        guard let i = config.profiles.firstIndex(where: { $0.id == activeProfileID }) else {
+            return
+        }
         let n = AccentPalette.options.count
         let clamped = ((index % n) + n) % n
         config.profiles[i].accentIndex = clamped
@@ -2567,7 +2894,9 @@ final class AppModel: ObservableObject {
     func cycleAccent(_ delta: Int) { setAccentIndex(accentIndex + delta) }
 
     func setProfileColor(_ index: Int) {
-        guard let i = config.profiles.firstIndex(where: { $0.id == activeProfileID }) else { return }
+        guard let i = config.profiles.firstIndex(where: { $0.id == activeProfileID }) else {
+            return
+        }
         let n = AvatarPalette.count
         config.profiles[i].colorIndex = ((index % n) + n) % n
         saveConfig()
@@ -2602,7 +2931,8 @@ final class AppModel: ObservableObject {
 
     private func prepareProfileSelect() {
         if let target = activeProfileID ?? config.lastProfileID,
-           let i = config.profiles.firstIndex(where: { $0.id == target }) {
+            let i = config.profiles.firstIndex(where: { $0.id == target })
+        {
             profileSelectIndex = i
         } else {
             profileSelectIndex = 0
@@ -2693,7 +3023,10 @@ final class AppModel: ObservableObject {
     }
 
     private func onboardingHorizontal(_ delta: Int, step: OnboardingStep) {
-        guard step == .profile else { moveOnboardingFocus(delta, step: step); return }
+        guard step == .profile else {
+            moveOnboardingFocus(delta, step: step)
+            return
+        }
         switch onboardingFocus {
         case 1:
             let n = AvatarPalette.count
@@ -2702,7 +3035,7 @@ final class AppModel: ObservableObject {
         case 2:
             let n = AccentPalette.options.count
             draftAccentIndex = ((draftAccentIndex + delta) % n + n) % n
-            AccentPalette.current = AccentPalette.color(draftAccentIndex)   // live preview
+            AccentPalette.current = AccentPalette.color(draftAccentIndex)  // live preview
             Sound.tick()
         default:
             moveOnboardingFocus(delta, step: step)
@@ -2729,7 +3062,8 @@ final class AppModel: ObservableObject {
         case .artKey:
             switch onboardingFocus {
             case 0: pasteSGDBKey()
-            case 1: beginKeyboard(.sgdbKey, initial: SteamGridDB.apiKey, title: "SteamGridDB API key")
+            case 1:
+                beginKeyboard(.sgdbKey, initial: SteamGridDB.apiKey, title: "SteamGridDB API key")
             default: advanceOnboarding()
             }
         case .finish:
@@ -2743,14 +3077,16 @@ final class AppModel: ObservableObject {
         let cleaned = draftName.trimmingCharacters(in: .whitespaces)
         let finalName = cleaned.isEmpty ? "Player" : cleaned
         if let id = onboardingDraftProfileID,
-           let i = config.profiles.firstIndex(where: { $0.id == id }) {
+            let i = config.profiles.firstIndex(where: { $0.id == id })
+        {
             config.profiles[i].name = finalName
             config.profiles[i].colorIndex = draftColorIndex
             config.profiles[i].accentIndex = draftAccentIndex
             saveConfig()
             activateProfile(id)
         } else {
-            let profile = createProfile(name: finalName, colorIndex: draftColorIndex, accentIndex: draftAccentIndex)
+            let profile = createProfile(
+                name: finalName, colorIndex: draftColorIndex, accentIndex: draftAccentIndex)
             onboardingDraftProfileID = profile.id
             activateProfile(profile.id)
         }
@@ -2858,7 +3194,10 @@ final class AppModel: ObservableObject {
     // MARK: - Play history
 
     private func loadHistory() {
-        guard let data = try? Data(contentsOf: historyFile) else { history = []; return }
+        guard let data = try? Data(contentsOf: historyFile) else {
+            history = []
+            return
+        }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         history = (try? decoder.decode([PlaySession].self, from: data)) ?? []
@@ -2868,7 +3207,8 @@ final class AppModel: ObservableObject {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         if let data = try? encoder.encode(history) {
-            try? FileManager.default.createDirectory(at: profileDir, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(
+                at: profileDir, withIntermediateDirectories: true)
             try? data.write(to: historyFile, options: .atomic)
         }
     }
