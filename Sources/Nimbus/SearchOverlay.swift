@@ -25,13 +25,16 @@ struct SearchOverlay: View {
 
             HStack(spacing: 26) {
                 if model.controllerConnected {
-                    Hint(symbol: "xmark.circle.fill",
-                         label: model.searchScope == .library ? "Go to game" : "Add / Remove")
+                    Hint(
+                        symbol: "xmark.circle.fill",
+                        label: model.searchScope == .library ? "Go to game" : "Add / Remove")
                     Hint(symbol: "triangle.circle.fill", label: "Scope")
                     Hint(symbol: "square.circle.fill", label: "Edit search")
                     Hint(symbol: "circle.circle.fill", label: "Done")
                 } else {
-                    Hint(text: "↩", label: model.searchScope == .library ? "Go to game" : "Add / Remove")
+                    Hint(
+                        text: "↩",
+                        label: model.searchScope == .library ? "Go to game" : "Add / Remove")
                     Hint(text: "⇥", label: "Scope")
                     Hint(text: "esc", label: "Done")
                     Hint(text: "↑↓", label: "Browse")
@@ -42,7 +45,10 @@ struct SearchOverlay: View {
             .padding(.vertical, 16)
             .background(.ultraThinMaterial)
         }
-        .background(.black.opacity(0.42))
+        .background(
+            // use the sick ass animated background instead
+            CinematicBackground()
+        )
         .onAppear {
             // On a controller the on-screen keyboard owns text entry, so don't steal focus into
             // the native field (its caret would sit dead with no hardware keyboard to feed it).
@@ -58,11 +64,14 @@ struct SearchOverlay: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.secondary)
-            TextField(model.searchScope == .library ? "Search your library" : "Search all GeForce NOW games",
-                      text: $model.searchQuery)
-                .textFieldStyle(.plain)
-                .font(.system(size: 20, weight: .medium))
-                .focused($fieldFocused)
+            TextField(
+                model.searchScope == .library
+                    ? "Search your library" : "Search all GeForce NOW games",
+                text: $model.searchQuery
+            )
+            .textFieldStyle(.plain)
+            .font(.system(size: 20, weight: .medium))
+            .focused($fieldFocused)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 15)
@@ -91,8 +100,11 @@ struct SearchOverlay: View {
                 .font(.system(size: 12.5, weight: .semibold))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
-                .background(active ? AnyShapeStyle(.white.opacity(0.18)) : AnyShapeStyle(.white.opacity(0.05)),
-                            in: Capsule())
+                .background(
+                    active
+                        ? AnyShapeStyle(.white.opacity(0.18)) : AnyShapeStyle(.white.opacity(0.05)),
+                    in: Capsule()
+                )
                 .overlay(Capsule().strokeBorder(.white.opacity(active ? 0.4 : 0.1)))
                 .foregroundStyle(active ? .primary : .secondary)
         }
@@ -117,22 +129,37 @@ struct SearchOverlay: View {
 
     private var resultsGrid: some View {
         GeometryReader { geo in
-            let cols = max(4, Int((geo.size.width - horizontalPadding * 2 + cardSpacing) / (170 + cardSpacing)))
+            let cols = max(
+                4, Int((geo.size.width - horizontalPadding * 2 + cardSpacing) / (170 + cardSpacing))
+            )
+
+            let cardW =
+                (geo.size.width - horizontalPadding * 2 - CGFloat(cols - 1) * cardSpacing)
+                / CGFloat(max(1, cols))
+            let rowSpacing = max(cardSpacing + 10, cardW * 1.5 * 0.16 + 12)
 
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: cardSpacing), count: cols),
-                        spacing: cardSpacing + 10
+                        columns: Array(
+                            repeating: GridItem(.flexible(), spacing: cardSpacing), count: cols),
+                        spacing: rowSpacing
                     ) {
-                        ForEach(Array(model.searchResults.enumerated()), id: \.element.id) { index, game in
+                        ForEach(Array(model.searchResults.enumerated()), id: \.element.id) {
+                            index, game in
+                            let focused = index == model.searchFocusedIndex
                             GameCard(
                                 game: game,
-                                focused: index == model.searchFocusedIndex,
-                                showTitle: true,
+                                focused: focused,
+                                showTitle: false,
                                 showLibraryBadge: model.searchScope == .catalog
                             )
                             .id(game.id)
+                            //Push the focused cards row-neighbours aside so the 1.32x zoom
+                            // opens a gap instead of overlapping them. the move the shelf makes.
+                            .offset(x: rowShift(index: index, cols: cols))
+                            .zIndex(focused ? 1 : 0)
+                            .animation(.easeOut(duration: 0.26), value: model.searchFocusedIndex)
                             .onTapGesture {
                                 model.focusSearchResult(id: game.id)
                                 model.toggleFocusedSearchResult()
@@ -143,17 +170,34 @@ struct SearchOverlay: View {
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
-                    .padding(.bottom, 32)
+                    // top/bottom  room so the zoom on the first and last rows isnt clipped by the
+                    // scroll viewport
+                    .padding(.top, 44)
+                    .padding(.bottom, 48)
                 }
                 .onChange(of: model.searchFocusedIndex) { _, newValue in
-                    guard model.searchResults.indices.contains(newValue), !model.focusChangeFromPointer else { return }
+                    guard model.searchResults.indices.contains(newValue),
+                        !model.focusChangeFromPointer
+                    else { return }
                     withAnimation(.easeOut(duration: 0.2)) {
-                        proxy.scrollTo(model.searchResults[newValue].id, anchor: UnitPoint(x: 0.5, y: 0.4))
+                        proxy.scrollTo(
+                            model.searchResults[newValue].id, anchor: UnitPoint(x: 0.5, y: 0.4))
                     }
                 }
                 .onAppear { model.searchColumns = cols }
                 .onChange(of: cols) { _, newValue in model.searchColumns = newValue }
             }
         }
+    }
+
+    private func rowShift(index: Int, cols: Int) -> CGFloat {
+        let focused = model.searchFocusedIndex
+        guard cols > 0, model.searchResults.indices.contains(focused),
+            index / cols == focused / cols
+        else { return 0 }
+        let spread: CGFloat = 30
+        if index > focused { return spread }
+        if index < focused { return -spread }
+        return 0
     }
 }
