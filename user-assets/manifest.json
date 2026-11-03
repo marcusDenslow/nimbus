@@ -1,0 +1,16 @@
+{
+  "note": "Folder/file names use GeForce NOW cmsIds (the Mac app's game IDs). Map to Steam via steamAppID.",
+  "games": {
+    "100080811": { "title": "Firewatch",          "steamAppID": 383870,  "custom": ["bg", "card", "logo"], "themeSong": "themes/100080811.mp3", "themeVolume": 0.197, "videoMuted": false },
+    "100204311": { "title": "Unravel Two",        "steamAppID": 1225570, "custom": ["bg", "card"] },
+    "100838211": { "title": "Cyberpunk 2077",     "steamAppID": 1091500, "custom": ["bg", "card", "logo"], "themeVolume": 0.113, "videoMuted": false },
+    "101958611": { "title": "Battlefield 2042",   "steamAppID": 1517290, "custom": ["bg", "card", "logo"] },
+    "102217611": { "title": "Hogwarts Legacy",    "steamAppID": 990080,  "custom": ["bg", "card"] },
+    "102269111": { "title": "It Takes Two",       "steamAppID": 1426210, "custom": ["bg", "card", "logo"] },
+    "102322511": { "title": "THE FINALS",         "steamAppID": 2073850, "custom": ["bg", "card", "logo"] },
+    "102729911": { "title": "Black Myth: Wukong", "steamAppID": 2358720, "custom": ["bg", "logo"] },
+    "103785733": { "title": "Split Fiction",      "steamAppID": 2001120, "custom": ["bg", "logo"] },
+    "103931169": { "title": "Crimson Desert",     "steamAppID": 3321460, "custom": ["bg", "card", "logo"], "themeSong": "themes/103931169.mp3", "themeVolume": 0.265 }
+  },
+  "menuMusic": ["music/PS5 Home Menu music - GSR gaming soundtrack radio (128k).mp3"]
+}
